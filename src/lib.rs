@@ -1,3 +1,5 @@
+extern crate core;
+
 use long_int::LongInt;
 use openssl::bn::{BigNum, BigNumContext};
 use openssl::ec::{EcGroup, EcGroupRef, EcPoint, EcPointRef, PointConversionForm};
@@ -35,9 +37,9 @@ impl Group {
     pub fn new(a: &LongInt, b: &LongInt, p: &LongInt) -> Group {
         let mut ctx = BigNumContext::new().unwrap();
 
-        let a = BigNum::from_hex_str(&a.getHex()).unwrap();
-        let b = BigNum::from_hex_str(&b.getHex()).unwrap();
-        let p = BigNum::from_hex_str(&p.getHex()).unwrap();
+        let a = long_int2big_num(&a);
+        let b = long_int2big_num(&b);
+        let p = long_int2big_num(&p);
 
         Group(EcGroup::from_components(p, a, b, &mut ctx).unwrap())
     }
@@ -80,15 +82,16 @@ impl Point {
 
         let mut point = EcPoint::new(&group.0).unwrap();
 
-        let x = BigNum::from_hex_str(&x.getHex()).unwrap();
-        let y = BigNum::from_hex_str(&y.getHex()).unwrap();
+        let x = long_int2big_num(&x);
+        let y = long_int2big_num(&y);
+
         point
             .set_affine_coordinates_gfp(&group.0, &x, &y, &mut ctx)
             .unwrap();
 
-        Point{
+        Point {
             point,
-            group: (*group).clone()
+            group: (*group).clone(),
         }
     }
 
@@ -129,7 +132,8 @@ impl Add<&Point> for &Point {
         let mut ctx = BigNumContext::new().unwrap();
 
         let mut res = EcPoint::new(&self.group.0).unwrap();
-        res.add(&self.group.0, &self.point, &rhs.point, &mut ctx).unwrap();
+        res.add(&self.group.0, &self.point, &rhs.point, &mut ctx)
+            .unwrap();
 
         Point {
             point: res,
@@ -167,7 +171,8 @@ impl Mul<&LongInt> for &Point {
 
         let mut res = EcPoint::new(&self.group.0).unwrap();
 
-        res.mul(&self.group.0, &self.point, &long_int2big_num(rhs), &mut ctx).unwrap();
+        res.mul(&self.group.0, &self.point, &long_int2big_num(rhs), &mut ctx)
+            .unwrap();
 
         ec_point2point(&res, &self.group.0)
     }
@@ -193,6 +198,34 @@ impl Mul<LongInt> for Point {
         &self * &rhs
     }
 }
+impl Mul<&Point> for &LongInt {
+    type Output = Point;
+
+    fn mul(self, rhs: &Point) -> Self::Output {
+        rhs * self
+    }
+}
+impl Mul<Point> for &LongInt {
+    type Output = Point;
+
+    fn mul(self, rhs: Point) -> Self::Output {
+        rhs * self
+    }
+}
+impl Mul<&Point> for LongInt {
+    type Output = Point;
+
+    fn mul(self, rhs: &Point) -> Self::Output {
+        rhs * self
+    }
+}
+impl Mul<Point> for LongInt {
+    type Output = Point;
+
+    fn mul(self, rhs: Point) -> Self::Output {
+        rhs * self
+    }
+}
 
 fn big_num2long_int(big_num: &BigNum) -> LongInt {
     LongInt::from_hex(&big_num.to_hex_str().unwrap().to_lowercase())
@@ -208,9 +241,15 @@ fn get_components(group: &EcGroupRef) -> (LongInt, LongInt, LongInt) {
     let mut p = BigNum::new().unwrap();
     let mut a = BigNum::new().unwrap();
     let mut b = BigNum::new().unwrap();
-    group.components_gfp(&mut p, &mut a, &mut b, &mut ctx).unwrap();
+    group
+        .components_gfp(&mut p, &mut a, &mut b, &mut ctx)
+        .unwrap();
 
-    (big_num2long_int(&a), big_num2long_int(&b), big_num2long_int(&p))
+    (
+        big_num2long_int(&a),
+        big_num2long_int(&b),
+        big_num2long_int(&p),
+    )
 }
 
 fn get_cords(point: &EcPointRef, group: &EcGroup) -> (LongInt, LongInt) {
@@ -229,4 +268,34 @@ fn get_cords(point: &EcPointRef, group: &EcGroup) -> (LongInt, LongInt) {
 fn ec_point2point(ec_point: &EcPoint, group: &EcGroup) -> Point {
     let (x, y) = get_cords(ec_point, group);
     Point::with_cords(&Group::from(group.as_ref()), &x, &y)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{Group, Point};
+    use long_int::LongInt;
+
+    #[test]
+    fn test() {
+        let group = Group::new(
+            &LongInt::from_hex("0"),
+            &LongInt::from_hex("7"),
+            &LongInt::from_hex("11"), // 17
+        );
+
+        println!("123");
+        let g = Point::with_cords(&group, &LongInt::from_hex("1"), &LongInt::from_hex("5"));
+
+        let k = LongInt::from_hex("10");
+        let d = LongInt::from_hex("7");
+
+        let h1 = &k * (&d * &g);
+        let h2 = &d * (&k * &g);
+
+        let (x1, y1) = h1.get_cords();
+        let (x2, y2) = h2.get_cords();
+
+        assert_eq!(x1.getHex(), x2.getHex());
+        assert_eq!(y1.getHex(), y2.getHex());
+    }
 }

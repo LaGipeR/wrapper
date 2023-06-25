@@ -283,7 +283,6 @@ mod tests {
             &LongInt::from_hex("11"), // 17
         );
 
-        println!("123");
         let g = Point::with_cords(&group, &LongInt::from_hex("1"), &LongInt::from_hex("5"));
 
         let k = LongInt::from_hex("10");

@@ -49,6 +49,10 @@ impl Group {
         Point::with_cords(self, &x, &y)
     }
 
+    pub fn set_generator(&mut self, generator: &Point, order: &LongInt, cofactor: &LongInt) {
+        self.0.set_generator(generator.clone().point, long_int2big_num(order), long_int2big_num(cofactor)).unwrap();
+    }
+
     fn get_components(&self) -> (LongInt, LongInt, LongInt) {
         get_components(self.0.as_ref())
     }
@@ -291,10 +295,6 @@ mod tests {
         let h1 = &k * (&d * &g);
         let h2 = &d * (&k * &g);
 
-        let (x1, y1) = h1.get_cords();
-        let (x2, y2) = h2.get_cords();
-
-        assert_eq!(x1.getHex(), x2.getHex());
-        assert_eq!(y1.getHex(), y2.getHex());
+        assert_eq!(h1.to_string(), h2.to_string());
     }
 }

@@ -49,8 +49,23 @@ impl Group {
         Point::with_cords(self, &x, &y)
     }
 
+    pub fn get_order(&self) -> LongInt {
+        let mut ctx = BigNumContext::new().unwrap();
+        let mut order = BigNum::new().unwrap();
+
+        self.0.order(&mut order, &mut ctx).unwrap();
+
+        big_num2long_int(&order)
+    }
+
     pub fn set_generator(&mut self, generator: &Point, order: &LongInt, cofactor: &LongInt) {
-        self.0.set_generator(generator.clone().point, long_int2big_num(order), long_int2big_num(cofactor)).unwrap();
+        self.0
+            .set_generator(
+                generator.clone().point,
+                long_int2big_num(order),
+                long_int2big_num(cofactor),
+            )
+            .unwrap();
     }
 
     fn get_components(&self) -> (LongInt, LongInt, LongInt) {

@@ -78,6 +78,15 @@ pub struct Point {
     group: Group,
 }
 
+impl PartialEq for Point {
+    fn eq(&self, other: &Self) -> bool {
+        let (sx, sy) = self.get_cords();
+        let (ox, oy) = other.get_cords();
+
+        (sx == ox) && (sy == oy) && (self.group == other.group)
+    }
+}
+
 impl Clone for Point {
     fn clone(&self) -> Self {
         let (x, y) = self.get_cords();

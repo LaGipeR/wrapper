@@ -80,6 +80,14 @@ pub struct Point {
 
 impl PartialEq for Point {
     fn eq(&self, other: &Self) -> bool {
+        if self.is_inf() {
+            return if other.is_inf() { true } else { false };
+        } else {
+            if other.is_inf() {
+                return false;
+            }
+        }
+
         let (sx, sy) = self.get_cords();
         let (ox, oy) = other.get_cords();
 

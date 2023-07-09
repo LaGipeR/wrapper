@@ -306,6 +306,10 @@ fn get_cords(point: &EcPointRef, group: &EcGroup) -> (LongInt, LongInt) {
 }
 
 fn ec_point2point(ec_point: &EcPoint, group: &EcGroup) -> Point {
+    if ec_point.is_infinity(group) {
+        return Point::inf(&Group::from(group.as_ref()));
+    }
+
     let (x, y) = get_cords(ec_point, group);
     Point::with_cords(&Group::from(group.as_ref()), &x, &y)
 }

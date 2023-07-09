@@ -147,6 +147,10 @@ impl Point {
 
         self.point.is_on_curve(&self.group.0, &mut ctx).unwrap()
     }
+
+    pub fn is_inf(&self) -> bool {
+        self.point.is_infinity(&self.group.0)
+    }
 }
 
 impl Add<&Point> for &Point {
